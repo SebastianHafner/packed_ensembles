@@ -1,0 +1,2 @@
+_BASE_: "r18_c10.yaml"
+DEBUG: True

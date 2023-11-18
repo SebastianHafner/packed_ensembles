@@ -1,0 +1,9 @@
+_BASE_: "base_c10.yaml"
+
+MODEL:
+  TYPE: 'resnet'
+  RESNET_SIZE: 18
+  PACKED: True
+  NUM_ESTIMATORS: 4
+  ALPHA: 2
+  GAMMA: 2
