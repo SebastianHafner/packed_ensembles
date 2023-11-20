@@ -3,6 +3,7 @@ from pathlib import Path
 from utils.experiment_manager import CfgNode
 
 import models
+from models.packed_resnet import *
 
 
 def create_network(cfg: CfgNode):
@@ -10,7 +11,9 @@ def create_network(cfg: CfgNode):
         if cfg.MODEL.RESNET_SIZE == 18:
             if cfg.MODEL.ENSEMBLE:
                 if cfg.MODEL.PACKED:
-                    raise NotImplementedError()
+                    net = PackedResNet18(cfg.MODEL.IN_CHANNELS, num_estimators=cfg.MODEL.NUM_ESTIMATORS,
+                                         alpha=cfg.MODEL.ALPHA, gamma=cfg.MODEL.GAMMA,
+                                         num_classes=cfg.MODEL.OUT_CHANNELS, groups=1)
                 else:
                     net = models.DeepEnsembleResNet18(cfg.MODEL.NUM_ESTIMATORS)
             else:
@@ -39,7 +42,7 @@ def create_network(cfg: CfgNode):
     else:
         raise Exception(f'Unknown network ({cfg.MODEL.TYPE}).')
     # return nn.DataParallel(net)
-    return net
+    return nn.DataParallel(net)
 
 
 def save_checkpoint(network, optimizer, epoch, cfg: CfgNode):
