@@ -124,9 +124,16 @@ def ResNet152():
     return ResNet(Bottleneck, [3, 8, 36, 3])
 
 
-def test():
-    net = ResNet18()
-    y = net(torch.randn(1, 3, 32, 32))
-    print(y.size())
+class DeepEnsembleResNet18(nn.Module):
+    def __init__(self, m: int = 4):
+        super(DeepEnsembleResNet18, self).__init__()
 
-# test()
+        self.m = m
+        self.resnets = []
+        for _ in range(m):
+            self.resnets.append(ResNet18())
+        self.resnets = torch.nn.ModuleList(self.resnets)
+
+    def forward(self, x):
+        out = [resnet(x) for resnet in self.resnets]
+        return out

@@ -1,0 +1,13 @@
+*.pyc
+data/
+__pycache__/
+checkpoints/
+logs/
+output/
+wandb/
+*.pth
+*.jpg
+SUBMISSION*
+
+
+.idea

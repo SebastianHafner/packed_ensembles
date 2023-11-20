@@ -1,0 +1,19 @@
+_BASE_: "base.yaml"
+
+MODEL:
+  TYPE: 'resnet'
+  RESNET_SIZE: 18
+  ENSEMBLE: True
+
+TRAINER:
+  LR: 0.05
+  BATCH_SIZE: 128
+  EPOCHS: 75
+  OPTIMIZER:
+    TYPE: 'sdg'
+    MOMENTUM: 0.9
+    WEIGHT_DECAY: 5e-4
+  LR_SCHEDULER:
+    TYPE: 'multistep'
+    GAMMA: 0.1
+    MILESTONES: [25, 50]

@@ -24,8 +24,7 @@ transform = transforms.Compose([
 
 
 def run_training(cfg):
-    # net = networks.create_network(cfg)
-    net = models.ResNet50()
+    net = networks.create_network(cfg)
     net.to(device)
 
     optimizer = optimizers.get_optimizer(cfg, net)
@@ -61,8 +60,13 @@ def run_training(cfg):
             optimizer.zero_grad()
 
             y_hat = net(images.to(device))
-
-            loss = criterion(y_hat, labels.long().to(device))
+            labels = labels.long().to(device)
+            if cfg.MODEL.ENSEMBLE:
+                loss = torch.tensor([0], device=device, dtype=torch.float)
+                for y_hat_m in y_hat:
+                    loss += criterion(y_hat_m, labels)
+            else:
+                loss = criterion(y_hat, labels)
             loss.backward()
             optimizer.step()
 
@@ -113,9 +117,8 @@ if __name__ == '__main__':
     wandb.init(
         name=cfg.NAME,
         config=cfg,
-        entity='population_mapping',
-        project=args.project,
-        tags=['run', 'population', 'mapping', 'regression', ],
+        project='FDD3412_packed_ensembles',
+        tags=['run', 'cifar10', 'packed', 'ensemble', ],
         mode='online' if not cfg.DEBUG else 'disabled',
     )
 
