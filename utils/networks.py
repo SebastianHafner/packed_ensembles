@@ -1,8 +1,6 @@
 import torch
 from pathlib import Path
 from utils.experiment_manager import CfgNode
-from torch_uncertainty.baselines.classification import ResNet
-from torch_uncertainty.models.resnet import packed_resnet18, resnet18
 
 import models
 
