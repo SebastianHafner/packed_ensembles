@@ -137,3 +137,18 @@ class DeepEnsembleResNet18(nn.Module):
     def forward(self, x):
         out = [resnet(x) for resnet in self.resnets]
         return out
+
+
+class DeepEnsembleResNet50(nn.Module):
+    def __init__(self, m: int = 4):
+        super(DeepEnsembleResNet50, self).__init__()
+
+        self.m = m
+        self.resnets = []
+        for _ in range(m):
+            self.resnets.append(ResNet50())
+        self.resnets = torch.nn.ModuleList(self.resnets)
+
+    def forward(self, x):
+        out = [resnet(x) for resnet in self.resnets]
+        return out

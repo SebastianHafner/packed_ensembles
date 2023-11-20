@@ -16,10 +16,13 @@ def create_network(cfg: CfgNode):
             else:
                 net = models.ResNet18()
         elif cfg.MODEL.RESNET_SIZE == 50:
-                if cfg.MODEL.ENSEMBLE:
+            if cfg.MODEL.ENSEMBLE:
+                if cfg.MODEL.PACKED:
                     raise NotImplementedError()
                 else:
-                    net = models.ResNet50()
+                    net = models.DeepEnsembleResNet50(cfg.MODEL.NUM_ESTIMATORS)
+            else:
+                net = models.ResNet50()
         else:
             raise NotImplementedError()
         # if not cfg.MODEL.PACKED:
