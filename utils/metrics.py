@@ -62,27 +62,26 @@ class ClassificationMetrics(object):
         auroc = AUROC(task='multiclass', num_classes=self.n_classes)
         preds = torch.cat(self.probabilities, dim=0)
         target = torch.cat(self.labels)
-        return auroc(preds, target)
+        return auroc(preds, target) * 100
 
     def aupr(self) -> float:
         average_precision = AveragePrecision(task='multiclass', num_classes=self.n_classes)
         preds = torch.cat(self.probabilities, dim=0)
         target = torch.cat(self.labels)
-        return average_precision(preds, target)
+        return average_precision(preds, target) * 100
 
     def fpr95(self) -> float:
-        # all_predictions = torch.cat(self.probabilities, dim=0)
-        # all_labels = torch.cat(self.labels)
-        #
-        # one_hot_labels = F.one_hot(all_labels)
-        #
-        # fpr, tpr, _ = roc_curve(one_hot_labels.ravel(), all_predictions.ravel())
-        #
-        # recall_index = np.argmax(tpr >= 0.95)
-        #
-        # return fpr[recall_index]
+        all_predictions = torch.cat(self.probabilities, dim=0)
+        all_labels = torch.cat(self.labels)
+
+        one_hot_labels = F.one_hot(all_labels)
+
+        fpr, tpr, _ = roc_curve(one_hot_labels.ravel(), all_predictions.ravel())
+
+        recall_index = np.argmax(tpr >= 0.95)
+
+        return fpr[recall_index] * 100
         # fpr95 = FPR95()
-        return 0
 
 from typing import List
 

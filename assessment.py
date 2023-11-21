@@ -37,15 +37,15 @@ def model_assessment_cifar10(cfg: CfgNode, train: bool = False):
     for step, (images, labels) in enumerate(tqdm(dataloader)):
         with torch.no_grad():
             logits = net(images.to(device))
-        measurer.add_sample(logits, labels)
+        measurer.add_sample(logits.cpu().detach(), labels)
 
     data = {
-        'acc': float(measurer.accuracy()),
-        'nll': float(measurer.negative_log_likelihood()),
-        'ece': float(measurer.calibration_error()),
-        'auc': float(measurer.auc()),
-        'aupr': float(measurer.aupr()),
-        'fpr95': float(measurer.fpr95()),
+        'acc': round(float(measurer.accuracy()), 1),
+        'nll': round(float(measurer.negative_log_likelihood()), 3),
+        'ece': round(float(measurer.calibration_error()), 3),
+        'auc': round(float(measurer.auc()), 1),
+        'aupr': round(float(measurer.aupr()), 1),
+        'fpr95': round(float(measurer.fpr95()), 1),
     }
 
     out_path = Path(cfg.PATHS.OUTPUT) / 'assessment' / f'{cfg.NAME}.json'
