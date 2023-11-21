@@ -292,6 +292,7 @@ class _PackedResNet(nn.Module):
         out = self.pool(out)
         out = self.flatten(out)
         out = self.linear(out)
+        out = rearrange(out, '(m b) c -> m b c', m=self.num_estimators)
         return out
 
     def check_config(self, config: Dict[str, Any]) -> bool:

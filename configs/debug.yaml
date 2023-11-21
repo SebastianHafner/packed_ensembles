@@ -1,2 +1,4 @@
 _BASE_: "r18pe_c10.yaml"
 DEBUG: True
+
+LOG_FREQ_EPOCH: 1

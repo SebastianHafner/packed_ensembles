@@ -136,6 +136,7 @@ class DeepEnsembleResNet18(nn.Module):
 
     def forward(self, x):
         out = [resnet(x) for resnet in self.resnets]
+        out = torch.stack(out, dim=0)
         return out
 
 
@@ -151,4 +152,5 @@ class DeepEnsembleResNet50(nn.Module):
 
     def forward(self, x):
         out = [resnet(x) for resnet in self.resnets]
+        out = torch.stack(out, dim=0)
         return out

@@ -13,7 +13,8 @@ from pathlib import Path
 from utils import networks, loss_functions, evaluation, experiment_manager, parsers, schedulers, optimizers
 import torchvision
 import torchvision.transforms as transforms
-import models
+from einops import rearrange
+
 
 transform = transforms.Compose([
     transforms.RandomCrop(32, padding=4),
@@ -62,9 +63,12 @@ def run_training(cfg):
             y_hat = net(images.to(device))
             labels = labels.long().to(device)
             if cfg.MODEL.ENSEMBLE:
-                loss = torch.tensor([0], device=device, dtype=torch.float)
-                for y_hat_m in y_hat:
-                    loss += criterion(y_hat_m, labels)
+                y_hat = rearrange(y_hat, 'm b c -> (m b) c')
+                pe_labels = labels.repeat(cfg.MODEL.NUM_ESTIMATORS)
+                loss = criterion(y_hat, pe_labels)
+                # loss = torch.tensor([0], device=device, dtype=torch.float)
+                # for y_hat_m in y_hat:
+                #     loss += criterion(y_hat_m, labels)
             else:
                 loss = criterion(y_hat, labels)
             loss.backward()

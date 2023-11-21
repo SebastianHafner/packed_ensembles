@@ -16,6 +16,9 @@ def model_assessment_cifar10(cfg: CfgNode, train: bool = False):
     net.to(device)
     net.eval()
 
+    n_params = networks.count_parameters(net)
+    print(f'n parameters: {n_params}')
+
     measurer = metrics.ClassificationMetrics(cfg.MODEL.OUT_CHANNELS, cfg.MODEL.ENSEMBLE)
 
     transform = transforms.Compose([

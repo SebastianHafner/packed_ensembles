@@ -33,7 +33,7 @@ def model_evaluation_cifar10(net, cfg: CfgNode, train: bool, epoch: float):
     for step, (images, labels) in enumerate(tqdm(dataloader)):
         with torch.no_grad():
             logits = net(images.to(device))
-        measurer.add_sample(logits, labels)
+        measurer.add_sample(logits.cpu().detach(), labels)
 
     # assessment
     acc = measurer.accuracy()

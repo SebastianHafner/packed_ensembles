@@ -66,3 +66,7 @@ def load_checkpoint(cfg: CfgNode, device: torch.device):
     net.load_state_dict(checkpoint['network'])
     # optimizer.load_state_dict(checkpoint['optimizer'])
     return net
+
+
+def count_parameters(net):
+    return sum(p.numel() for p in net.parameters() if p.requires_grad)

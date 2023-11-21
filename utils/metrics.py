@@ -25,13 +25,12 @@ class ClassificationMetrics(object):
         self.probabilities = []
 
     def add_sample(self, logits: torch.tensor, labels: torch.tensor):
-        sm = nn.LogSoftmax(dim=1)
-
         if self.ensemble:
-            logits = [l.cpu().detach() for l in logits]
-            probs = [sm(l) for l in logits]
-            probs = torch.mean(torch.stack(probs), dim=0)
+            sm = nn.LogSoftmax(dim=2)
+            probs = sm(logits)
+            probs = torch.mean(probs, dim=0)
         else:
+            sm = nn.LogSoftmax(dim=1)
             logits = logits.cpu().detach()
             probs = sm(logits)
 
