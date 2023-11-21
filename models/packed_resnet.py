@@ -137,18 +137,9 @@ class Bottleneck(nn.Module):
 
 
 class _PackedResNet(nn.Module):
-    def __init__(
-            self,
-            block: Type[Union[BasicBlock, Bottleneck]],
-            num_blocks: List[int],
-            in_channels: int,
-            num_classes: int,
-            num_estimators: int,
-            alpha: int = 2,
-            gamma: int = 1,
-            groups: int = 1,
-            style: str = "imagenet",
-    ) -> None:
+    def __init__(self, block: Type[Union[BasicBlock, Bottleneck]], num_blocks: List[int], in_channels: int,
+                 num_classes: int, num_estimators: int, alpha: int = 2, gamma: int = 1, groups: int = 1,
+                 style: str = "imagenet") -> None:
         super().__init__()
 
         self.in_channels = in_channels
@@ -160,40 +151,15 @@ class _PackedResNet(nn.Module):
         block_planes = self.in_planes
 
         if style == "imagenet":
-            self.conv1 = PackedConv2d(
-                self.in_channels,
-                block_planes,
-                kernel_size=7,
-                stride=2,
-                padding=3,
-                alpha=alpha,
-                num_estimators=num_estimators,
-                gamma=1,  # No groups for the first layer
-                groups=groups,
-                bias=False,
-                first=True,
-            )
+            self.conv1 = PackedConv2d(self.in_channels, block_planes, kernel_size=7, stride=2, padding=3, alpha=alpha,
+                                      num_estimators=num_estimators, gamma=1, groups=groups, bias=False, first=True)
         else:
-            self.conv1 = PackedConv2d(
-                self.in_channels,
-                block_planes,
-                kernel_size=3,
-                stride=1,
-                padding=1,
-                alpha=alpha,
-                num_estimators=num_estimators,
-                gamma=1,  # No groups for the first layer
-                groups=groups,
-                bias=False,
-                first=True,
-            )
-
+            self.conv1 = PackedConv2d(self.in_channels, block_planes, kernel_size=3, stride=1, padding=1, alpha=alpha,
+                                      num_estimators=num_estimators, gamma=1, groups=groups, bias=False, first=True)
         self.bn1 = nn.BatchNorm2d(block_planes * alpha)
 
         if style == "imagenet":
-            self.optional_pool = nn.MaxPool2d(
-                kernel_size=3, stride=2, padding=1
-            )
+            self.optional_pool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         else:
             self.optional_pool = nn.Identity()
 
@@ -241,13 +207,8 @@ class _PackedResNet(nn.Module):
         self.pool = nn.AdaptiveAvgPool2d(output_size=1)
         self.flatten = nn.Flatten(1)
 
-        self.linear = PackedLinear(
-            block_planes * 8 * block.expansion,
-            num_classes,
-            alpha=alpha,
-            num_estimators=num_estimators,
-            last=True,
-        )
+        self.linear = PackedLinear(block_planes * 8 * block.expansion, num_classes, alpha=alpha,
+                                   num_estimators=num_estimators, last=True)
 
     def _make_layer(
             self,
