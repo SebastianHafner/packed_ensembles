@@ -3,6 +3,8 @@ from torch.utils import data as torch_data
 import torchvision
 import torchvision.transforms as transforms
 
+import numpy as np
+
 import wandb
 from tqdm import tqdm
 from utils import metrics, parsers, experiment_manager, networks, helpers
@@ -11,64 +13,79 @@ from pathlib import Path
 
 
 def model_assessment_cifar10(cfg: CfgNode, train: bool = False):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    net = networks.load_checkpoint(cfg, device)
-    net.to(device)
-    net.eval()
+    runs = sorted((Path(cfg.PATHS.OUTPUT) / 'networks').glob(f'{cfg.NAME}_run_*'))
+    if not runs:
+        # We only have a single run
+        runs = [Path(cfg.PATHS.OUTPUT) / 'networks' / f'{cfg.NAME}.pt']
+        
+    data_dict = {}
+    for run_path in runs:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        net = networks.load_checkpoint(cfg, device, net_file=run_path)
+        net.to(device)
+        net.eval()
 
-    n_params = networks.count_parameters(net)
-    print(f'n parameters: {n_params}')
+        n_params = networks.count_parameters(net)
+        print(f'n parameters: {n_params}')
 
-    measurer = metrics.ClassificationMetrics(cfg.MODEL.OUT_CHANNELS, cfg.MODEL.ENSEMBLE)
-    ood_measurer = metrics.OODMetrics(1, cfg.MODEL.ENSEMBLE)
+        measurer = metrics.ClassificationMetrics(cfg.MODEL.OUT_CHANNELS, cfg.MODEL.ENSEMBLE)
+        ood_measurer = metrics.OODMetrics(1, cfg.MODEL.ENSEMBLE)
 
-    transform_cifar10 = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-    ])
-    transform_svhn = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.4376821, 0.4437697, 0.47280442), (0.19803012, 0.20101562, 0.19703614)),
-    ])
+        transform_cifar10 = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        ])
+        transform_svhn = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.4376821, 0.4437697, 0.47280442), (0.19803012, 0.20101562, 0.19703614)),
+        ])
 
-    dataset_cifar10 = torchvision.datasets.CIFAR10(root=Path(cfg.PATHS.DATASET), train=train, download=True,
-                                           transform=transform_cifar10)
-    dataset_svhn = torchvision.datasets.SVHN(root=Path(cfg.PATHS.DATASET), split='train' if train else 'test', download=True,
-                                           transform=transform_svhn)
+        dataset_cifar10 = torchvision.datasets.CIFAR10(root=Path(cfg.PATHS.DATASET), train=train, download=True,
+                                            transform=transform_cifar10)
+        dataset_svhn = torchvision.datasets.SVHN(root=Path(cfg.PATHS.DATASET), split='train' if train else 'test', download=True,
+                                            transform=transform_svhn)
 
-    dataloader_kwargs = {
-        'batch_size': cfg.TRAINER.BATCH_SIZE,
-        'num_workers': 0 if cfg.DEBUG else cfg.DATALOADER.NUM_WORKER,
-        'shuffle': False,
-    }
+        dataloader_kwargs = {
+            'batch_size': cfg.TRAINER.BATCH_SIZE,
+            'num_workers': 0 if cfg.DEBUG else cfg.DATALOADER.NUM_WORKER,
+            'shuffle': False,
+        }
 
-    dataloader = torch_data.DataLoader(dataset_cifar10, **dataloader_kwargs)
-    svhn_dataloader = torch_data.DataLoader(dataset_svhn, **dataloader_kwargs)
+        dataloader = torch_data.DataLoader(dataset_cifar10, **dataloader_kwargs)
+        svhn_dataloader = torch_data.DataLoader(dataset_svhn, **dataloader_kwargs)
 
-    for step, (images, labels) in enumerate(tqdm(dataloader)):
-        with torch.no_grad():
-            logits = net(images.to(device)).cpu().detach()
-        measurer.add_sample(logits, labels)
-        ood_measurer.add_sample(logits, torch.ones_like(labels))
+        for step, (images, labels) in enumerate(tqdm(dataloader)):
+            with torch.no_grad():
+                logits = net(images.to(device)).cpu().detach()
+            measurer.add_sample(logits, labels)
+            ood_measurer.add_sample(logits, torch.ones_like(labels))
 
-    for step, (images, labels) in enumerate(tqdm(svhn_dataloader)):
-        with torch.no_grad():
-            logits = net(images.to(device)).cpu().detach()
-        ood_measurer.add_sample(logits, torch.zeros_like(labels))
+        for step, (images, labels) in enumerate(tqdm(svhn_dataloader)):
+            with torch.no_grad():
+                logits = net(images.to(device)).cpu().detach()
+            ood_measurer.add_sample(logits, torch.zeros_like(labels))
 
-    data = {
-        'acc': round(float(measurer.accuracy()), 1),
-        'nll': round(float(measurer.negative_log_likelihood()), 3),
-        'ece': round(float(measurer.calibration_error()), 3),
-        'auc': round(float(ood_measurer.auc()), 1),
-        'aupr': round(float(ood_measurer.aupr()), 1),
-        'fpr95': round(float(ood_measurer.fpr95()), 1),
-    }
+        data = {
+            'acc': float(measurer.accuracy()),
+            'nll': float(measurer.negative_log_likelihood()),
+            'ece': float(measurer.calibration_error()),
+            'auc': float(ood_measurer.auc()),
+            'aupr': float(ood_measurer.aupr()),
+            'fpr95': float(ood_measurer.fpr95()),
+        }
+        data_dict[run_path.stem] = data
 
-    print(data)
+        print(data)
+
+        out_path = Path(cfg.PATHS.OUTPUT) / 'assessment' / f'{run_path.stem}.json'
+        helpers.write_json(out_path, data)
+
+    avg_data = {m:round(np.mean([d[m] for d in data_dict.values()]), 3) for m in data}
+
+    print('Avg stats:', avg_data)
 
     out_path = Path(cfg.PATHS.OUTPUT) / 'assessment' / f'{cfg.NAME}.json'
-    helpers.write_json(out_path, data)
+    helpers.write_json(out_path, avg_data)
 
 
 if __name__ == '__main__':

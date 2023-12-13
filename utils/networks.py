@@ -47,8 +47,11 @@ def create_network(cfg: CfgNode):
     return nn.DataParallel(net)
 
 
-def save_checkpoint(network, optimizer, run, epoch, cfg: CfgNode):
-    save_file = Path(cfg.PATHS.OUTPUT) / 'networks' / f'{cfg.NAME}_run{run}.pt'
+def save_checkpoint(network, optimizer, epoch, cfg: CfgNode, run = None):
+    if run:
+        save_file = Path(cfg.PATHS.OUTPUT) / 'networks' / f'{cfg.NAME}_run_{run}.pt'
+    else:
+        save_file = Path(cfg.PATHS.OUTPUT) / 'networks' / f'{cfg.NAME}.pt'
     checkpoint = {
         'epoch': epoch,
         'network': network.state_dict(),
@@ -57,11 +60,12 @@ def save_checkpoint(network, optimizer, run, epoch, cfg: CfgNode):
     torch.save(checkpoint, save_file)
 
 
-def load_checkpoint(cfg: CfgNode, device: torch.device):
+def load_checkpoint(cfg: CfgNode, device: torch.device, net_file: Path = None):
     net = create_network(cfg)
     net.to(device)
 
-    net_file = Path(cfg.PATHS.OUTPUT) / 'networks' / f'{cfg.NAME}.pt'
+    if not net_file:
+        net_file = Path(cfg.PATHS.OUTPUT) / 'networks' / f'{cfg.NAME}.pt'
 
     checkpoint = torch.load(net_file, map_location=device)
     # optimizer = torch.optim.AdamW(net.parameters(), lr=cfg.TRAINER.LR, weight_decay=0.01)
