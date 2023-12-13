@@ -21,7 +21,9 @@ def create_network(cfg: CfgNode):
         elif cfg.MODEL.RESNET_SIZE == 50:
             if cfg.MODEL.ENSEMBLE:
                 if cfg.MODEL.PACKED:
-                    raise NotImplementedError()
+                    net = PackedResNet50(cfg.MODEL.IN_CHANNELS, num_estimators=cfg.MODEL.NUM_ESTIMATORS,
+                                         alpha=cfg.MODEL.ALPHA, gamma=cfg.MODEL.GAMMA,
+                                         num_classes=cfg.MODEL.OUT_CHANNELS, groups=1)
                 else:
                     net = models.DeepEnsembleResNet50(cfg.MODEL.NUM_ESTIMATORS)
             else:

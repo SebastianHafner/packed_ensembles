@@ -47,22 +47,22 @@ def model_assessment_cifar10(cfg: CfgNode, train: bool = False):
 
     for step, (images, labels) in enumerate(tqdm(dataloader)):
         with torch.no_grad():
-            logits = net(images.to(device))
+            logits = net(images.to(device)).cpu().detach()
         measurer.add_sample(logits, labels)
         ood_measurer.add_sample(logits, torch.ones_like(labels))
 
     for step, (images, labels) in enumerate(tqdm(svhn_dataloader)):
         with torch.no_grad():
-            logits = net(images.to(device))
+            logits = net(images.to(device)).cpu().detach()
         ood_measurer.add_sample(logits, torch.zeros_like(labels))
 
     data = {
-        'acc': float(measurer.accuracy()),
-        'nll': float(measurer.negative_log_likelihood()),
-        'ece': float(measurer.calibration_error()),
-        'auc': float(ood_measurer.auc()),
-        'aupr': float(ood_measurer.aupr()),
-        'fpr95': float(ood_measurer.fpr95()),
+        'acc': round(float(measurer.accuracy()), 1),
+        'nll': round(float(measurer.negative_log_likelihood()), 3),
+        'ece': round(float(measurer.calibration_error()), 3),
+        'auc': round(float(ood_measurer.auc()), 1),
+        'aupr': round(float(ood_measurer.aupr()), 1),
+        'fpr95': round(float(ood_measurer.fpr95()), 1),
     }
 
     print(data)

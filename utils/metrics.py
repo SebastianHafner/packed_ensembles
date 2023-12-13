@@ -27,12 +27,10 @@ class ClassificationMetrics(object):
     def add_sample(self, logits: torch.tensor, labels: torch.tensor):
         if self.ensemble:
             sm = nn.LogSoftmax(dim=2)
-            logits = logits.cpu().detach()
             probs = sm(logits)
             probs = torch.mean(probs, dim=0)
         else:
             sm = nn.LogSoftmax(dim=1)
-            logits = logits.cpu().detach()
             probs = sm(logits)
 
         loss = self.criterion(probs, labels)
@@ -100,8 +98,7 @@ class OODMetrics(object):
         auroc = AUROC(task='binary', num_classes=self.n_classes)
         preds = torch.cat(self.probabilities, dim=0)
         target = torch.cat(self.labels)
-
-        return auroc(preds, target)
+        return auroc(preds, target) * 100
 
     def aupr(self) -> float:
         # Adapted from https://github.com/tayden/ood-metrics/blob/main/ood_metrics/metrics.py
@@ -111,7 +108,7 @@ class OODMetrics(object):
         target = torch.cat(self.labels).ravel()
         target_out = 1 - target
         precision, recall, _ = precision_recall_curve(target_out, preds_out, pos_label=1)
-        return auc(recall, precision)
+        return auc(recall, precision) * 100
 
     def fpr95(self) -> float:
         # From https://github.com/tayden/ood-metrics/blob/main/ood_metrics/metrics.py
@@ -126,7 +123,7 @@ class OODMetrics(object):
         elif all(tpr >= 0.95):
             # All thresholds allow TPR >= 0.95, so find lowest possible FPR
             idxs = [i for i, x in enumerate(tpr) if x >= 0.95]
-            return min(map(lambda idx: fpr[idx], idxs))
+            return min(map(lambda idx: fpr[idx], idxs)) * 100
         else:
             # Linear interp between values to get FPR at TPR == 0.95
-            return np.interp(0.95, tpr, fpr)
+            return np.interp(0.95, tpr, fpr) * 100

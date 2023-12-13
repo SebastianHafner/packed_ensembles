@@ -19,34 +19,15 @@ class BasicBlock(nn.Module):
         self.conv1 = PackedConv2d(in_planes, planes, kernel_size=3, alpha=alpha, num_estimators=num_estimators,
                                   groups=groups, stride=stride, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(planes * alpha)
-        self.conv2 = PackedConv2d(
-            planes,
-            planes,
-            kernel_size=3,
-            alpha=alpha,
-            num_estimators=num_estimators,
-            gamma=gamma,
-            groups=groups,
-            stride=1,
-            padding=1,
-            bias=False,
-        )
+        self.conv2 = PackedConv2d(planes, planes, kernel_size=3, alpha=alpha, num_estimators=num_estimators,
+                                  gamma=gamma, groups=groups, stride=1, padding=1, bias=False)
         self.bn2 = nn.BatchNorm2d(planes * alpha)
 
         self.shortcut = nn.Sequential()
         if stride != 1 or in_planes != self.expansion * planes:
             self.shortcut = nn.Sequential(
-                PackedConv2d(
-                    in_planes,
-                    self.expansion * planes,
-                    kernel_size=1,
-                    alpha=alpha,
-                    num_estimators=num_estimators,
-                    gamma=gamma,
-                    groups=groups,
-                    stride=stride,
-                    bias=False,
-                ),
+                PackedConv2d(in_planes, self.expansion * planes, kernel_size=1, alpha=alpha,
+                             num_estimators=num_estimators, gamma=gamma, groups=groups, stride=stride, bias=False),
                 nn.BatchNorm2d(self.expansion * planes * alpha),
             )
 
@@ -61,69 +42,26 @@ class BasicBlock(nn.Module):
 class Bottleneck(nn.Module):
     expansion = 4
 
-    def __init__(
-            self,
-            in_planes: int,
-            planes: int,
-            stride: int = 1,
-            alpha: float = 2,
-            num_estimators: int = 4,
-            gamma: int = 1,
-            groups: int = 1,
-    ):
+    def __init__(self, in_planes: int, planes: int, stride: int = 1, alpha: float = 2, num_estimators: int = 4,
+                 gamma: int = 1, groups: int = 1):
         super(Bottleneck, self).__init__()
 
         # No subgroups for the first layer
-        self.conv1 = PackedConv2d(
-            in_planes,
-            planes,
-            kernel_size=1,
-            alpha=alpha,
-            num_estimators=num_estimators,
-            gamma=1,  # No groups from gamma in the first layer
-            groups=groups,
-            bias=False,
-        )
+        self.conv1 = PackedConv2d(in_planes, planes, kernel_size=1, alpha=alpha, num_estimators=num_estimators,
+                                  gamma=1, groups=groups, bias=False,)
         self.bn1 = nn.BatchNorm2d(planes * alpha)
-        self.conv2 = PackedConv2d(
-            planes,
-            planes,
-            kernel_size=3,
-            alpha=alpha,
-            num_estimators=num_estimators,
-            gamma=gamma,
-            stride=stride,
-            padding=1,
-            groups=groups,
-            bias=False,
-        )
+        self.conv2 = PackedConv2d(planes, planes, kernel_size=3, alpha=alpha, num_estimators=num_estimators,
+                                  gamma=gamma, stride=stride, padding=1, groups=groups, bias=False)
         self.bn2 = nn.BatchNorm2d(planes * alpha)
-        self.conv3 = PackedConv2d(
-            planes,
-            self.expansion * planes,
-            kernel_size=1,
-            alpha=alpha,
-            num_estimators=num_estimators,
-            gamma=gamma,
-            groups=groups,
-            bias=False,
-        )
+        self.conv3 = PackedConv2d(planes, self.expansion * planes, kernel_size=1, alpha=alpha,
+                                  num_estimators=num_estimators, gamma=gamma, groups=groups, bias=False)
         self.bn3 = nn.BatchNorm2d(self.expansion * planes * alpha)
 
         self.shortcut = nn.Sequential()
         if stride != 1 or in_planes != self.expansion * planes:
             self.shortcut = nn.Sequential(
-                PackedConv2d(
-                    in_planes,
-                    self.expansion * planes,
-                    kernel_size=1,
-                    alpha=alpha,
-                    num_estimators=num_estimators,
-                    gamma=gamma,
-                    groups=groups,
-                    stride=stride,
-                    bias=False,
-                ),
+                PackedConv2d(in_planes, self.expansion * planes, kernel_size=1, alpha=alpha,
+                             num_estimators=num_estimators, gamma=gamma, groups=groups, stride=stride, bias=False),
                 nn.BatchNorm2d(self.expansion * planes * alpha),
             )
 
@@ -138,8 +76,7 @@ class Bottleneck(nn.Module):
 
 class _PackedResNet(nn.Module):
     def __init__(self, block: Type[Union[BasicBlock, Bottleneck]], num_blocks: List[int], in_channels: int,
-                 num_classes: int, num_estimators: int, alpha: int = 2, gamma: int = 1, groups: int = 1,
-                 style: str = "imagenet") -> None:
+                 num_classes: int, num_estimators: int, alpha: int = 2, gamma: int = 1, groups: int = 1) -> None:
         super().__init__()
 
         self.in_channels = in_channels
@@ -150,59 +87,21 @@ class _PackedResNet(nn.Module):
         self.in_planes = 64
         block_planes = self.in_planes
 
-        if style == "imagenet":
-            self.conv1 = PackedConv2d(self.in_channels, block_planes, kernel_size=7, stride=2, padding=3, alpha=alpha,
-                                      num_estimators=num_estimators, gamma=1, groups=groups, bias=False, first=True)
-        else:
-            self.conv1 = PackedConv2d(self.in_channels, block_planes, kernel_size=3, stride=1, padding=1, alpha=alpha,
-                                      num_estimators=num_estimators, gamma=1, groups=groups, bias=False, first=True)
+
+        self.conv1 = PackedConv2d(self.in_channels, block_planes, kernel_size=3, stride=1, padding=1, alpha=alpha,
+                                  num_estimators=num_estimators, gamma=1, groups=groups, bias=False, first=True)
         self.bn1 = nn.BatchNorm2d(block_planes * alpha)
 
-        if style == "imagenet":
-            self.optional_pool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        else:
-            self.optional_pool = nn.Identity()
+        self.optional_pool = nn.Identity()
 
-        self.layer1 = self._make_layer(
-            block,
-            block_planes,
-            num_blocks[0],
-            stride=1,
-            alpha=alpha,
-            num_estimators=num_estimators,
-            gamma=gamma,
-            groups=groups,
-        )
-        self.layer2 = self._make_layer(
-            block,
-            block_planes * 2,
-            num_blocks[1],
-            stride=2,
-            alpha=alpha,
-            num_estimators=num_estimators,
-            gamma=gamma,
-            groups=groups,
-        )
-        self.layer3 = self._make_layer(
-            block,
-            block_planes * 4,
-            num_blocks[2],
-            stride=2,
-            alpha=alpha,
-            num_estimators=num_estimators,
-            gamma=gamma,
-            groups=groups,
-        )
-        self.layer4 = self._make_layer(
-            block,
-            block_planes * 8,
-            num_blocks[3],
-            stride=2,
-            alpha=alpha,
-            num_estimators=num_estimators,
-            gamma=gamma,
-            groups=groups,
-        )
+        self.layer1 = self._make_layer(block, block_planes, num_blocks[0], stride=1, alpha=alpha,
+                                       num_estimators=num_estimators, gamma=gamma, groups=groups)
+        self.layer2 = self._make_layer(block, block_planes * 2, num_blocks[1], stride=2, alpha=alpha,
+                                       num_estimators=num_estimators, gamma=gamma, groups=groups)
+        self.layer3 = self._make_layer(block, block_planes * 4, num_blocks[2], stride=2, alpha=alpha,
+                                       num_estimators=num_estimators, gamma=gamma, groups=groups)
+        self.layer4 = self._make_layer(block, block_planes * 8, num_blocks[3], stride=2, alpha=alpha,
+                                       num_estimators=num_estimators, gamma=gamma, groups=groups)
 
         self.pool = nn.AdaptiveAvgPool2d(output_size=1)
         self.flatten = nn.Flatten(1)
@@ -210,30 +109,14 @@ class _PackedResNet(nn.Module):
         self.linear = PackedLinear(block_planes * 8 * block.expansion, num_classes, alpha=alpha,
                                    num_estimators=num_estimators, last=True)
 
-    def _make_layer(
-            self,
-            block: Type[Union[BasicBlock, Bottleneck]],
-            planes: int,
-            num_blocks: int,
-            stride: int,
-            alpha: float,
-            num_estimators: int,
-            gamma: int,
-            groups: int,
-    ) -> nn.Module:
+    def _make_layer(self, block: Type[Union[BasicBlock, Bottleneck]], planes: int, num_blocks: int, stride: int,
+                    alpha: float, num_estimators: int, gamma: int, groups: int) -> nn.Module:
         strides = [stride] + [1] * (num_blocks - 1)
         layers = []
         for stride in strides:
             layers.append(
-                block(
-                    self.in_planes,
-                    planes,
-                    stride,
-                    alpha=alpha,
-                    num_estimators=num_estimators,
-                    gamma=gamma,
-                    groups=groups,
-                )
+                block(self.in_planes, planes, stride, alpha=alpha, num_estimators=num_estimators, gamma=gamma,
+                      groups=groups)
             )
             self.in_planes = planes * block.expansion
         return nn.Sequential(*layers)
@@ -266,25 +149,15 @@ class _PackedResNet(nn.Module):
         )
 
 
-def PackedResNet18(in_channels: int, num_estimators: int, alpha: int, gamma: int, num_classes: int, groups: int,
-                   style: str = "imagenet") -> _PackedResNet:
+def PackedResNet18(in_channels: int, num_estimators: int, alpha: int, gamma: int, num_classes: int,
+                   groups: int) -> _PackedResNet:
     net = _PackedResNet(block=BasicBlock, num_blocks=[2, 2, 2, 2], in_channels=in_channels,
-                        num_estimators=num_estimators, alpha=alpha, gamma=gamma, groups=groups, num_classes=num_classes,
-                        style=style)
+                        num_estimators=num_estimators, alpha=alpha, gamma=gamma, groups=groups, num_classes=num_classes)
     return net
 
 
-def PackedResNet50(in_channels: int, num_estimators: int, alpha: int, gamma: int, num_classes: int, groups: int,
-                   style: str = "imagenet") -> _PackedResNet:
-    net = _PackedResNet(
-        block=Bottleneck,
-        num_blocks=[3, 4, 6, 3],
-        in_channels=in_channels,
-        num_estimators=num_estimators,
-        alpha=alpha,
-        gamma=gamma,
-        groups=groups,
-        num_classes=num_classes,
-        style=style,
-    )
+def PackedResNet50(in_channels: int, num_estimators: int, alpha: int, gamma: int, num_classes: int,
+                   groups: int) -> _PackedResNet:
+    net = _PackedResNet(block=Bottleneck, num_blocks=[3, 4, 6, 3], in_channels=in_channels,
+                        num_estimators=num_estimators, alpha=alpha, gamma=gamma, groups=groups, num_classes=num_classes)
     return net
