@@ -47,8 +47,8 @@ def create_network(cfg: CfgNode):
     return nn.DataParallel(net)
 
 
-def save_checkpoint(network, optimizer, epoch, cfg: CfgNode):
-    save_file = Path(cfg.PATHS.OUTPUT) / 'networks' / f'{cfg.NAME}.pt'
+def save_checkpoint(network, optimizer, run, epoch, cfg: CfgNode):
+    save_file = Path(cfg.PATHS.OUTPUT) / 'networks' / f'{cfg.NAME}_run{run}.pt'
     checkpoint = {
         'epoch': epoch,
         'network': network.state_dict(),

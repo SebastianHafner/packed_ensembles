@@ -25,83 +25,95 @@ transform = transforms.Compose([
 
 
 def run_training(cfg):
-    net = networks.create_network(cfg)
-    net.to(device)
+    for r in range(cfg.NUM_RUNS):
+        run = wandb.init(
+            name=cfg.NAME,
+            config=cfg,
+            project='FDD3412_packed_ensembles',
+            tags=['run', 'cifar10', 'packed', 'ensemble', ],
+            mode='online' if not cfg.DEBUG else 'disabled',
+        )
 
-    optimizer = optimizers.get_optimizer(cfg, net)
-    scheduler = schedulers.get_scheduler(cfg, optimizer)
+        net = networks.create_network(cfg)
+        net.to(device)
 
-    criterion = loss_functions.get_criterion(cfg.MODEL.LOSS_TYPE)
+        optimizer = optimizers.get_optimizer(cfg, net)
+        scheduler = schedulers.get_scheduler(cfg, optimizer)
 
-    # reset the generators
-    dataset = torchvision.datasets.CIFAR10(root=Path(cfg.PATHS.DATASET), train=True, download=True, transform=transform)
-    dataloader_kwargs = {
-        'batch_size': cfg.TRAINER.BATCH_SIZE,
-        'num_workers': 0 if cfg.DEBUG else cfg.DATALOADER.NUM_WORKER,
-        'shuffle': cfg.DATALOADER.SHUFFLE,
-    }
-    dataloader = torch_data.DataLoader(dataset, **dataloader_kwargs)
+        criterion = loss_functions.get_criterion(cfg.MODEL.LOSS_TYPE)
 
-    # unpacking cfg
-    epochs = cfg.TRAINER.EPOCHS
-    steps_per_epoch = len(dataloader)
+        # reset the generators
+        dataset = torchvision.datasets.CIFAR10(root=Path(cfg.PATHS.DATASET), train=True, download=True, transform=transform)
+        dataloader_kwargs = {
+            'batch_size': cfg.TRAINER.BATCH_SIZE,
+            'num_workers': 0 if cfg.DEBUG else cfg.DATALOADER.NUM_WORKER,
+            'shuffle': cfg.DATALOADER.SHUFFLE,
+        }
+        dataloader = torch_data.DataLoader(dataset, **dataloader_kwargs)
 
-    # tracking variables
-    global_step = epoch_float = 0
-    # _ = evaluation.model_evaluation_cifar10(net, cfg, False, epoch_float)
-    for epoch in range(1, epochs + 1):
-        print(f'Starting epoch {epoch}/{epochs}.')
-        wandb.log({'lr': scheduler.get_last_lr()[-1] if scheduler is not None else cfg.TRAINER.LR, 'epoch': epoch})
+        # unpacking cfg
+        epochs = cfg.TRAINER.EPOCHS
+        steps_per_epoch = len(dataloader)
 
-        start = timeit.default_timer()
-        loss_set = []
+        # tracking variables
+        global_step = epoch_float = 0
+        # _ = evaluation.model_evaluation_cifar10(net, cfg, False, epoch_float)
+        for epoch in range(1, epochs + 1):
+            print(f'Starting epoch {epoch}/{epochs}.')
+            wandb.log({'lr': scheduler.get_last_lr()[-1] if scheduler is not None else cfg.TRAINER.LR, 'epoch': epoch})
 
-        for i, (images, labels) in enumerate(dataloader):
-            net.train()
-            optimizer.zero_grad()
+            start = timeit.default_timer()
+            loss_set = []
 
-            y_hat = net(images.to(device))
-            labels = labels.long().to(device)
-            if cfg.MODEL.ENSEMBLE:
-                y_hat = rearrange(y_hat, 'm b c -> (m b) c')
-                pe_labels = labels.repeat(cfg.MODEL.NUM_ESTIMATORS)
-                loss = criterion(y_hat, pe_labels)
-                # loss = torch.tensor([0], device=device, dtype=torch.float)
-                # for y_hat_m in y_hat:
-                #     loss += criterion(y_hat_m, labels)
-            else:
-                loss = criterion(y_hat, labels)
-            loss.backward()
-            optimizer.step()
+            for i, (images, labels) in enumerate(dataloader):
+                net.train()
+                optimizer.zero_grad()
 
-            loss_set.append(loss.item())
+                y_hat = net(images.to(device))
+                labels = labels.long().to(device)
+                if cfg.MODEL.ENSEMBLE:
+                    y_hat = rearrange(y_hat, 'm b c -> (m b) c')
+                    pe_labels = labels.repeat(cfg.MODEL.NUM_ESTIMATORS)
+                    loss = criterion(y_hat, pe_labels)
+                    # loss = torch.tensor([0], device=device, dtype=torch.float)
+                    # for y_hat_m in y_hat:
+                    #     loss += criterion(y_hat_m, labels)
+                else:
+                    loss = criterion(y_hat, labels)
+                loss.backward()
+                optimizer.step()
 
-            global_step += 1
-            epoch_float = global_step / steps_per_epoch
+                loss_set.append(loss.item())
 
-            if global_step % cfg.LOG_FREQ_STEP == 0:
-                print(f'Logging step {global_step} (epoch {epoch_float:.2f}).')
-                # logging
-                time = timeit.default_timer() - start
-                wandb.log({
-                    'loss': np.mean(loss_set),
-                    'time': time,
-                    'step': global_step,
-                    'epoch': epoch_float,
-                })
-                start = timeit.default_timer()
-                loss_set = []
+                global_step += 1
+                epoch_float = global_step / steps_per_epoch
 
-        assert (epoch == epoch_float)
-        print(f'epoch float {epoch_float} (step {global_step}) - epoch {epoch}')
-        if scheduler is not None:
-            scheduler.step()
+                if global_step % cfg.LOG_FREQ_STEP == 0:
+                    print(f'Logging step {global_step} (epoch {epoch_float:.2f}).')
+                    # logging
+                    time = timeit.default_timer() - start
+                    wandb.log({
+                        'loss': np.mean(loss_set),
+                        'time': time,
+                        'step': global_step,
+                        'epoch': epoch_float,
+                    })
+                    start = timeit.default_timer()
+                    loss_set = []
 
-        if epoch % cfg.LOG_FREQ_EPOCH == 0:
-            # _ = evaluation.model_evaluation_cifar10(net, cfg, True, epoch_float)
-            _ = evaluation.model_evaluation_cifar10(net, cfg, False, epoch_float)
+            assert (epoch == epoch_float)
+            print(f'epoch float {epoch_float} (step {global_step}) - epoch {epoch}')
+            if scheduler is not None:
+                scheduler.step()
 
-    networks.save_checkpoint(net, optimizer, cfg.TRAINER.EPOCHS, cfg)
+            if epoch % cfg.LOG_FREQ_EPOCH == 0:
+                # _ = evaluation.model_evaluation_cifar10(net, cfg, True, epoch_float)
+                _ = evaluation.model_evaluation_cifar10(net, cfg, False, epoch_float)
+
+        networks.save_checkpoint(net, optimizer, run, cfg.TRAINER.EPOCHS, cfg)
+
+        run.finish()
+
 
 
 if __name__ == '__main__':
@@ -117,14 +129,6 @@ if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     print('=== Runnning on device: p', device)
-
-    wandb.init(
-        name=cfg.NAME,
-        config=cfg,
-        project='FDD3412_packed_ensembles',
-        tags=['run', 'cifar10', 'packed', 'ensemble', ],
-        mode='online' if not cfg.DEBUG else 'disabled',
-    )
 
     try:
         run_training(cfg)
