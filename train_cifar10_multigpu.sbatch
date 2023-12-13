@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #SBATCH --mem-per-cpu 4600M
-#SBATCH --gres gpu:1
-#SBATCH --cpus-per-task 8
+#SBATCH --gres gpu:2
+#SBATCH --cpus-per-task 16
 #SBATCH --output /geoinfo_vol1/%u/run_logs/train_cifar10_%J.log
 #SBATCH --error  /geoinfo_vol1/%u/run_logs/train_cifar10_%J.err
 

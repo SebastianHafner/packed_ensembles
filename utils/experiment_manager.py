@@ -56,6 +56,7 @@ def setup_cfg(args, config_name: str = None):
     cfg.merge_from_file(f'configs/{config_name}.yaml')
     cfg.merge_from_list(args.opts)
     cfg.NAME = config_name
+    cfg.RUN_NUM = args.run
     cfg.PATHS.ROOT = str(Path.cwd())
     assert (Path(args.output_dir).exists())
     cfg.PATHS.OUTPUT = args.output_dir
