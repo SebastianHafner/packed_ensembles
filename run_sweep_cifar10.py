@@ -131,28 +131,21 @@ if __name__ == '__main__':
             save_file = Path(cfg.PATHS.OUTPUT) / 'networks' / f'{cfg.NAME}_{hyperparam_setting}_run_{cfg.RUN_NUM}.pt'
             networks.save_checkpoint(net, optimizer, cfg.TRAINER.EPOCHS, cfg, save_file=save_file)
 
+    # Step 2: Define sweep config
+    sweep_config = {
+        'method': 'grid',
+        'name': cfg.NAME,
+        'metric': {'goal': 'maximize', 'name': 'best val f1'},
+        'parameters':
+            {
+                'run_num': {'values': [0, 1, 2, 3, 4]},
+                'num_estimators': {'values': [2, 4, 8]},
+                'alpha': {'values': [2, 4]},
+                'gamma': {'values': [2, 4, 8]},
+            }
+    }
 
-    if args.sweep_id is None:
-        # Step 2: Define sweep config
-        sweep_config = {
-            'method': 'grid',
-            'name': cfg.NAME,
-            'metric': {'goal': 'maximize', 'name': 'best val f1'},
-            'parameters':
-                {
-                    'run_num': {'values': [0, 1, 2, 3, 4]},
-                    'num_estimators': {'values': [2, 4, 8]},
-                    'alpha': {'values': [2, 4]},
-                    'gamma': {'values': [2, 4, 8]},
-                }
-        }
-
-        # Step 3: Initialize sweep by passing in config or resume sweep
-        sweep_id = wandb.sweep(sweep=sweep_config, project=args.wandb_project)
-        # Step 4: Call to `wandb.agent` to start a sweep
-        wandb.agent(sweep_id, function=run_training)
-    else:
-        # Or resume existing sweep via its id
-        # https://github.com/wandb/wandb/issues/1501
-        sweep_id = args.sweep_id
-        wandb.agent(sweep_id, project=args.wandb_project, function=run_training)
+    # Step 3: Initialize sweep by passing in config or resume sweep
+    sweep_id = wandb.sweep(sweep=sweep_config, project=args.wandb_project)
+    # Step 4: Call to `wandb.agent` to start a sweep
+    wandb.agent(sweep_id, function=run_training)
