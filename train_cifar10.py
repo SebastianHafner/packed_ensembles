@@ -15,6 +15,8 @@ import torchvision
 import torchvision.transforms as transforms
 from einops import rearrange
 
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
 
 transform = transforms.Compose([
     transforms.RandomCrop(32, padding=4),
@@ -69,8 +71,6 @@ def run_training(cfg):
             optimizer.zero_grad()
 
             y_hat = net(images.to(device))
-            print(labels.shape)
-            print(y_hat.shape)
             labels = labels.long().to(device)
             if cfg.MODEL.ENSEMBLE:
                 y_hat = rearrange(y_hat, 'm b c -> (m b) c')
@@ -114,7 +114,6 @@ def run_training(cfg):
     networks.save_checkpoint(net, optimizer, cfg.RUN_NUM, cfg.TRAINER.EPOCHS, cfg)
 
     run.finish()
-
 
 
 if __name__ == '__main__':

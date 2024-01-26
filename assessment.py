@@ -81,11 +81,17 @@ def model_assessment_cifar10(cfg: CfgNode, train: bool = False):
         helpers.write_json(out_path, data)
 
     avg_data = {m:round(np.mean([d[m] for d in data_dict.values()]), 3) for m in data}
-
     print('Avg stats:', avg_data)
+    std_data = {m: round(np.std([d[m] for d in data_dict.values()]), 3) for m in data}
+    print('Std stats', std_data)
+
+    out_data = {
+        'mean': avg_data,
+        'std': std_data,
+    }
 
     out_path = Path(cfg.PATHS.OUTPUT) / 'assessment' / f'{cfg.NAME}.json'
-    helpers.write_json(out_path, avg_data)
+    helpers.write_json(out_path, out_data)
 
 
 if __name__ == '__main__':

@@ -30,28 +30,18 @@ def create_network(cfg: CfgNode):
                 net = models.ResNet50()
         else:
             raise NotImplementedError()
-        # if not cfg.MODEL.PACKED:
-        #     # net = ResNet(cfg)
-        #     net = resnet18(in_channels=cfg.MODEL.IN_CHANNELS, num_classes=cfg.MODEL.OUT_CHANNELS)
-        # else:
-        #     net = packed_resnet18(
-        #         in_channels=cfg.MODEL.IN_CHANNELS,
-        #         num_estimators=cfg.MODEL.NUM_ESTIMATORS,
-        #         alpha=cfg.MODEL.ALPHA,
-        #         gamma=cfg.MODEL.GAMMA,
-        #         num_classes=cfg.MODEL.OUT_CHANNELS,
-        #     )
     else:
         raise Exception(f'Unknown network ({cfg.MODEL.TYPE}).')
     # return nn.DataParallel(net)
     return nn.DataParallel(net)
 
 
-def save_checkpoint(network, optimizer, epoch, cfg: CfgNode, run = None):
-    if run:
-        save_file = Path(cfg.PATHS.OUTPUT) / 'networks' / f'{cfg.NAME}_run_{run}.pt'
-    else:
-        save_file = Path(cfg.PATHS.OUTPUT) / 'networks' / f'{cfg.NAME}.pt'
+def save_checkpoint(network, optimizer, epoch: int, cfg: CfgNode, run: int = None, save_file: Path = None):
+    if save_file is None:
+        if run:
+            save_file = Path(cfg.PATHS.OUTPUT) / 'networks' / f'{cfg.NAME}_run_{run}.pt'
+        else:
+            save_file = Path(cfg.PATHS.OUTPUT) / 'networks' / f'{cfg.NAME}.pt'
     checkpoint = {
         'epoch': epoch,
         'network': network.state_dict(),
@@ -68,9 +58,7 @@ def load_checkpoint(cfg: CfgNode, device: torch.device, net_file: Path = None):
         net_file = Path(cfg.PATHS.OUTPUT) / 'networks' / f'{cfg.NAME}.pt'
 
     checkpoint = torch.load(net_file, map_location=device)
-    # optimizer = torch.optim.AdamW(net.parameters(), lr=cfg.TRAINER.LR, weight_decay=0.01)
     net.load_state_dict(checkpoint['network'])
-    # optimizer.load_state_dict(checkpoint['optimizer'])
     return net
 
 

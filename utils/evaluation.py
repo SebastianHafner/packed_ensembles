@@ -51,36 +51,3 @@ def model_evaluation_cifar10(net, cfg: CfgNode, train: bool, epoch: float):
     })
 
     return acc
-
-
-if __name__ == '__main__':
-    import torch
-    import torch.nn.functional as F
-    import numpy as np
-    from sklearn.metrics import roc_curve
-
-    # Assuming you have toy tensors for predictions and labels
-    # Replace these with your actual toy tensors or generate random ones
-    num_samples = 1000
-    num_classes = 5
-
-    # Random toy predictions (replace this with your actual tensor)
-    all_predictions = torch.randn((num_samples, num_classes))
-
-    # Random toy labels (replace this with your actual tensor)
-    all_labels = torch.randint(0, num_classes, (num_samples,))
-
-    # Convert labels to one-hot encoding
-    one_hot_labels = F.one_hot(all_labels)
-
-    # Calculate FPR and TPR using sklearn's roc_curve
-    fpr, tpr, _ = roc_curve(one_hot_labels.ravel(), all_predictions.ravel())
-
-    # Find the index where recall is closest to 95%
-    recall_at_95 = 0.95
-    recall_index = np.argmax(tpr >= recall_at_95)
-
-    # Calculate FPR95
-    fpr95 = fpr[recall_index]
-
-    print(f"FPR at 95% Recall (FPR95): {fpr95:.4f}")
