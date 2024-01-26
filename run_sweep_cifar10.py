@@ -27,9 +27,6 @@ if __name__ == '__main__':
     args = parsers.training_argument_parser().parse_known_args()[0]
     cfg = experiment_manager.setup_cfg(args)
 
-    sweep_dir = Path(cfg.PATHS.OUTPUT) / 'sweeps' / cfg.NAME
-    sweep_dir.mkdir(exist_ok=True)
-
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print('=== Runnning on device: p', device)
 
