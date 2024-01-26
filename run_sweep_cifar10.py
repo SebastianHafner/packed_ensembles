@@ -130,7 +130,9 @@ if __name__ == '__main__':
                     # _ = evaluation.model_evaluation_cifar10(net, cfg, True, epoch_float)
                     _ = evaluation.model_evaluation_cifar10(net, cfg, False, epoch_float)
 
-            networks.save_checkpoint(net, optimizer, cfg.RUN_NUM, cfg.TRAINER.EPOCHS, cfg)
+            hyperparam_setting = f'm{sweep_cfg.num_estimators}a{sweep_cfg.alpha}y{sweep_cfg.gamma}'
+            save_file = Path(cfg.PATHS.OUTPUT) / 'networks' / f'{cfg.NAME}_{hyperparam_setting}_run_{cfg.RUN_NUM}.pt'
+            networks.save_checkpoint(net, optimizer, cfg.TRAINER.EPOCHS, cfg, save_file=save_file)
 
 
     if args.sweep_id is None:
@@ -141,10 +143,10 @@ if __name__ == '__main__':
             'metric': {'goal': 'maximize', 'name': 'best val f1'},
             'parameters':
                 {
-                    'run_num': {'values': [1, 2]},
-                    'num_estimators': {'values': [2, 4]},
+                    'run_num': {'values': [0, 1, 2, 3, 4]},
+                    'num_estimators': {'values': [2, 4, 8]},
                     'alpha': {'values': [2, 4]},
-                    'gamma': {'values': [2, 4]},
+                    'gamma': {'values': [2, 4, 8]},
                 }
         }
 

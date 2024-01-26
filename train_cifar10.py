@@ -111,7 +111,7 @@ def run_training(cfg):
             # _ = evaluation.model_evaluation_cifar10(net, cfg, True, epoch_float)
             _ = evaluation.model_evaluation_cifar10(net, cfg, False, epoch_float)
 
-    networks.save_checkpoint(net, optimizer, cfg.RUN_NUM, cfg.TRAINER.EPOCHS, cfg)
+    networks.save_checkpoint(net, optimizer, cfg.TRAINER.EPOCHS, cfg, cfg.RUN_NUM)
 
     run.finish()
 
