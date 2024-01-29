@@ -85,6 +85,7 @@ def model_assessment_cifar10(cfg: CfgNode, train: bool = False, hyper_params: st
             'fpr95': float(ood_measurer.fpr95()),
             'time': float(end - start),
             'images': len(dataset_cifar10),
+            'params': int(n_params),
         }
         data_dict[run_path.stem] = data
 
