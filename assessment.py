@@ -103,4 +103,4 @@ def model_assessment_cifar10(cfg: CfgNode, train: bool = False, hyper_params: st
 if __name__ == '__main__':
     args = parsers.inference_argument_parser().parse_known_args()[0]
     cfg = experiment_manager.setup_cfg(args)
-    model_assessment_cifar10(cfg, hyper_params=args.hyper_params)
+    model_assessment_cifar10(cfg, hyper_params=None if args.hyper_params == 'None' else args.hyper_params)
