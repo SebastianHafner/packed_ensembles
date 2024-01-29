@@ -28,7 +28,7 @@ def inference_argument_parser():
     parser.add_argument('-o', "--output-dir", dest='output_dir', required=True, help="path to output directory")
     parser.add_argument('-d', "--dataset-dir", dest='dataset_dir', default="", required=True,
                         help="path to output directory")
-    parser.add_argument('-h', "--hyper-params", dest='hyper_params', default="None", required=True,
+    parser.add_argument('-p', "--hyper-params", dest='hyper_params', default=None, required=False,
                         help="Hyper-parameters")
 
     parser.add_argument(

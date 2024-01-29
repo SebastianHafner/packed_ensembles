@@ -13,7 +13,14 @@ from timeit import default_timer as timer
 
 
 def model_assessment_cifar10(cfg: CfgNode, train: bool = False, hyper_params: str = None):
-    run_name = f'{cfg.NAME}' if hyper_params is None else f'{cfg.NAME}_{hyper_params}'
+    if hyper_params is not None:
+        run_name = f'{cfg.NAME}_{hyper_params}'
+        assert(len(hyper_params) == 6)
+        cfg.MODEL.NUM_ESTIMATORS = int(hyper_params[1])
+        cfg.MODEL.ALPHA = int(hyper_params[3])
+        cfg.MODEL.GAMMA = int(hyper_params[5])
+    else:
+        run_name = f'{cfg.NAME}'
 
     runs = sorted((Path(cfg.PATHS.OUTPUT) / 'networks').glob(f'{run_name}_run_*'))
     if not runs:
@@ -103,4 +110,4 @@ def model_assessment_cifar10(cfg: CfgNode, train: bool = False, hyper_params: st
 if __name__ == '__main__':
     args = parsers.inference_argument_parser().parse_known_args()[0]
     cfg = experiment_manager.setup_cfg(args)
-    model_assessment_cifar10(cfg, hyper_params=None if args.hyper_params == 'None' else args.hyper_params)
+    model_assessment_cifar10(cfg, hyper_params=args.hyper_params)
