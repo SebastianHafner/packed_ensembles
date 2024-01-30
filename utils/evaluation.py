@@ -43,9 +43,6 @@ def model_evaluation_cifar10(net, cfg: CfgNode, train: bool, epoch: float):
         f'{run_type} acc': acc,
         f'{run_type} nll': measurer.negative_log_likelihood(),
         f'{run_type} ece': measurer.calibration_error(),
-        # f'{run_type} auc': measurer.auc(),
-        # f'{run_type} aupr': measurer.aupr(),
-        # f'{run_type} fpr95': measurer.fpr95(),
         'step': step,
         'epoch': epoch,
     })
