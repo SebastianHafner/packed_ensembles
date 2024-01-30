@@ -102,6 +102,7 @@ def model_assessment_cifar10(cfg: CfgNode, train: bool = False, hyper_params: st
     out_data = {
         'mean': avg_data,
         'std': std_data,
+        'runs': len(runs),
     }
 
     out_path = Path(cfg.PATHS.OUTPUT) / 'assessment' / f'{run_name}.json'
